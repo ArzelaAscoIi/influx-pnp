@@ -1,0 +1,34 @@
+  
+version: '3.6'
+
+services:
+  influxdb:
+    image: quay.io/influxdb/influxdb:v2.0.4
+    ports: 
+      - 8086:8086
+
+  influxdb_cli:
+    links:
+      - influxdb
+    image: quay.io/influxdb/influxdb:v2.0.4
+    entrypoint: influx setup --bucket ${BUCKET} -t ${TOKEN} -o ${ORGANIZATION} --username=${USERNAME} --password=${PASSWORD} --host=http://influxdb:8086 -f
+    restart: on-failure:5
+    depends_on:
+      - influxdb
+
+  telegraf:
+    image: telegraf
+    volumes:
+      - ./config/mqtt/telegraf.conf:/etc/telegraf/telegraf.conf
+    environment:
+      TOKEN: ${TOKEN}
+      BUCKET: ${BUCKET}
+      ORGANIZATION: ${ORGANIZATION}
+
+  mosquitto:
+    image: eclipse-mosquitto
+    ports:
+      - 1883:1883
+      - 9001:9001
+    volumes:
+      - ./config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
